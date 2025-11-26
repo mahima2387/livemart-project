@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Products - Live MART</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f5f5f5; }
+        .navbar { background: #667eea; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+        .navbar h2 { font-size: 24px; }
+        .navbar a { color: white; text-decoration: none; margin-left: 20px; padding: 8px 15px; border-radius: 5px; }
+        .navbar a:hover { background: rgba(255,255,255,0.2); }
+        .container { max-width: 1400px; margin: 30px auto; padding: 0 20px; }
+        
+        /* Filter Section */
+        .filters { background: white; padding: 20px; border-radius: 10px; margin-bottom: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .filters h3 { margin-bottom: 15px; color: #667eea; }
+        .filter-row { display: flex; gap: 15px; flex-wrap: wrap; align-items: end; }
+        .filter-group { flex: 1; min-width: 200px; }
+        .filter-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
+        .filter-group select, .filter-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+        .filter-actions { display: flex; gap: 10px; }
+        .btn-filter { padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .btn-filter:hover { background: #5568d3; }
+        .btn-clear { padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; text-decoration: none; display: inline-block; }
+        .btn-clear:hover { background: #5a6268; }
+        .checkbox-group { display: flex; align-items: center; gap: 10px; margin-top: 25px; }
+        .checkbox-group input { width: auto; }
+        
+        /* Products Grid */
+        .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; }
+        .product-card { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); transition: 0.3s; }
+        .product-card:hover { transform: translateY(-5px); box-shadow: 0 5px 20px rgba(0,0,0,0.15); }
+        .product-image { width: 100%; height: 200px; object-fit: cover; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #999; }
+        .product-info { padding: 20px; }
+        .product-name { font-size: 18px; font-weight: bold; margin-bottom: 10px; color: #333; }
+        .product-category { font-size: 12px; color: #667eea; margin-bottom: 10px; text-transform: uppercase; }
+        .product-price { font-size: 24px; color: #28a745; font-weight: bold; margin-bottom: 10px; }
+        .product-stock { font-size: 14px; margin-bottom: 15px; }
+        .stock-available { color: #28a745; }
+        .stock-unavailable { color: #dc3545; }
+        .product-country { font-size: 12px; color: #888; margin-bottom: 15px; }
+        .btn-view { display: block; width: 100%; padding: 12px; background: #667eea; color: white; text-align: center; text-decoration: none; border-radius: 5px; }
+        .btn-view:hover { background: #5568d3; }
+        .alert { padding: 15px; margin-bottom: 20px; border-radius: 5px; }
+        .alert-success { background: #d4edda; color: #155724; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <h2>🛒 Products</h2>
+        <div>
+            <a href="/dashboard">Dashboard</a>
+            <a href="/customer/cart">Cart</a>
+            <a href="/customer/orders">My Orders</a>
+            <a href="/logout">Logout</a>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+        
+        <!-- Filter Section -->
+        <div class="filters">
+            <h3>🔍 Filter Products</h3>
+            <form action="/customer/products" method="get">
+                <div class="filter-row">
+                    <div class="filter-group">
+                        <label>Category</label>
+                        <select name="category">
+                            <option value="">All Categories</option>
+                            <option th:each="cat : ${categories}" 
+                                    th:value="${cat}" 
+                                    th:text="${cat}"
+                                    th:selected="${cat == selectedCategory}">Category</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label>Min Price (₹)</label>
+                        <input type="number" name="minPrice" step="0.01" th:value="${minPrice}" placeholder="0">
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label>Max Price (₹)</label>
+                        <input type="number" name="maxPrice" step="0.01" th:value="${maxPrice}" placeholder="Any">
+                    </div>
+                    
+                    <div class="checkbox-group">
+                        <input type="checkbox" name="inStock" value="true" th:checked="${inStock}" id="inStock">
+                        <label for="inStock">In Stock Only</label>
+                    </div>
+                    
+                    <div class="filter-actions">
+                        <button type="submit" class="btn-filter">Apply Filters</button>
+                        <a href="/customer/products" class="btn-clear">Clear</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Products Grid -->
+        <div class="products-grid" th:if="${!products.isEmpty()}">
+            <div class="product-card" th:each="product : ${products}">
+                <div class="product-image" th:if="${product.imageUrl == null || product.imageUrl.isEmpty()}">
+                    📦 No Image
+                </div>
+                <img th:if="${product.imageUrl != null && !product.imageUrl.isEmpty()}" 
+                     th:src="${product.imageUrl}" 
+                     th:alt="${product.name}" 
+                     class="product-image">
+                
+                <div class="product-info">
+                    <div class="product-category" th:text="${product.category}">Category</div>
+                    <div class="product-name" th:text="${product.name}">Product Name</div>
+                    <div class="product-price" th:text="'₹' + ${product.price}">Price</div>
+                    
+                    <!-- Stock Display with Conditional -->
+                    <div class="product-stock" 
+                         th:classappend="${product.stockQuantity > 0 ? 'stock-available' : 'stock-unavailable'}">
+                        <span th:if="${product.stockQuantity > 0}" th:text="${product.stockQuantity} + ' in stock'">Stock</span>
+                        <span th:if="${product.stockQuantity == 0}">❌ Not in stock</span>
+                    </div>
+                    
+                    <div class="product-country" th:text="'Made in ' + ${product.manufacturingCountry}">Country</div>
+                    <a th:href="@{/customer/product/{id}(id=${product.id})}" class="btn-view">View Details</a>
+                </div>
+            </div>
+        </div>
+        
+        <p th:if="${products.isEmpty()}" style="text-align: center; padding: 40px; color: #666;">
+            No products found matching your filters. Try adjusting your search criteria.
+        </p>
+    </div>
+</body>
+</html>

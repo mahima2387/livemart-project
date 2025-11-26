@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout - Live MART</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f5f5f5; }
+        .navbar { background: #667eea; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+        .navbar h2 { font-size: 24px; }
+        .navbar a { color: white; text-decoration: none; margin-left: 20px; padding: 8px 15px; border-radius: 5px; }
+        .navbar a:hover { background: rgba(255,255,255,0.2); }
+        .container { max-width: 1200px; margin: 30px auto; padding: 0 20px; display: grid; grid-template-columns: 2fr 1fr; gap: 30px; }
+        .checkout-form { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .checkout-form h2 { margin-bottom: 20px; color: #333; }
+        .form-group { margin: 20px 0; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; }
+        .form-group textarea { resize: vertical; min-height: 80px; }
+        .order-summary { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); height: fit-content; }
+        .order-summary h2 { margin-bottom: 20px; color: #333; }
+        .summary-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; }
+        .summary-total { display: flex; justify-content: space-between; padding: 20px 0; font-size: 20px; font-weight: bold; color: #333; }
+        .btn-place-order { width: 100%; padding: 15px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 20px; }
+        .btn-place-order:hover { background: #218838; }
+        .cart-items { margin: 20px 0; }
+        .cart-item { padding: 15px 0; border-bottom: 1px solid #eee; }
+        .item-name { font-weight: bold; color: #333; }
+        .item-details { color: #666; font-size: 14px; margin-top: 5px; }
+        .delivery-date-info { background: #e7f3ff; padding: 15px; border-radius: 5px; margin-top: 10px; font-size: 14px; color: #004085; }
+        .alert { padding: 15px; margin-bottom: 20px; border-radius: 5px; }
+        .alert-error { background: #f8d7da; color: #721c24; }
+        
+        /* Payment Modal */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); overflow-y: auto; }
+        .modal-content { background: white; margin: 3% auto; padding: 0; border-radius: 10px; width: 90%; max-width: 600px; box-shadow: 0 5px 20px rgba(0,0,0,0.3); }
+        .modal-header { background: #667eea; color: white; padding: 20px; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center; }
+        .modal-body { padding: 30px; }
+        .close { font-size: 28px; font-weight: bold; cursor: pointer; color: white; }
+        .close:hover { opacity: 0.8; }
+        
+        /* Credit/Debit Card Form */
+        .card-form { max-width: 400px; margin: 0 auto; }
+        .card-display { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 15px; color: white; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .card-number-display { font-size: 24px; letter-spacing: 3px; margin: 20px 0; font-family: 'Courier New', monospace; }
+        .card-details { display: flex; justify-content: space-between; margin-top: 20px; }
+        .input-group { margin: 15px 0; }
+        .input-group input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; }
+        .card-icons { display: flex; gap: 10px; margin-top: 10px; }
+        .card-icon { width: 50px; height: 30px; background: white; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 10px; }
+        
+        /* UPI Form */
+        .upi-form { text-align: center; }
+        .upi-logo { font-size: 60px; margin: 20px 0; }
+        .upi-input { max-width: 400px; margin: 20px auto; }
+        .upi-apps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; max-width: 400px; margin: 30px auto; }
+        .upi-app { padding: 15px; border: 2px solid #ddd; border-radius: 10px; cursor: pointer; text-align: center; transition: 0.3s; }
+        .upi-app:hover { border-color: #667eea; background: #f0f0ff; }
+        .upi-app-icon { font-size: 30px; margin-bottom: 5px; }
+        
+        /* Net Banking Form */
+        .bank-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin: 20px 0; }
+        .bank-option { padding: 20px; border: 2px solid #ddd; border-radius: 10px; cursor: pointer; text-align: center; transition: 0.3s; }
+        .bank-option:hover { border-color: #667eea; background: #f0f0ff; }
+        .bank-option.selected { border-color: #667eea; background: #e7f3ff; }
+        .bank-icon { font-size: 30px; margin-bottom: 10px; }
+        
+        .btn-pay { width: 100%; padding: 15px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 20px; }
+        .btn-pay:hover { background: #218838; }
+        .demo-note { text-align: center; color: #666; margin: 15px 0; padding: 15px; background: #fff3cd; border-radius: 5px; border: 1px solid #ffc107; }
+        
+        @media (max-width: 768px) { 
+            .container { grid-template-columns: 1fr; }
+            .bank-grid { grid-template-columns: repeat(2, 1fr); }
+            .upi-apps { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+    <script>
+        window.onload = function() {
+            var today = new Date().toISOString().split('T')[0];
+            document.getElementById('deliveryDate').setAttribute('min', today);
+            var tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            document.getElementById('deliveryDate').value = tomorrow.toISOString().split('T')[0];
+        };
+        
+        function handlePayment(event) {
+            event.preventDefault();
+            
+            const paymentMethod = document.getElementById('paymentMethod').value;
+            const deliveryDate = document.getElementById('deliveryDate').value;
+            const specialInstructions = document.getElementById('specialInstructions').value;
+            
+            if (!paymentMethod) {
+                alert('Please select a payment method');
+                return;
+            }
+            
+            if (!deliveryDate) {
+                alert('Please select a delivery date');
+                return;
+            }
+            
+            const totalAmount = parseFloat(document.getElementById('totalAmount').textContent);
+            window.checkoutData = { paymentMethod, deliveryDate, specialInstructions, totalAmount };
+            
+            // If Cash on Delivery, submit directly
+            if (paymentMethod === 'CASH_ON_DELIVERY') {
+                document.getElementById('checkoutForm').submit();
+                return;
+            }
+            
+            // Show appropriate payment gateway
+            showPaymentGateway(paymentMethod);
+        }
+        
+        function showPaymentGateway(method) {
+            closeAllModals();
+            
+            if (method === 'CREDIT_CARD' || method === 'DEBIT_CARD') {
+                document.getElementById('cardModal').style.display = 'block';
+                document.getElementById('modalTitle').textContent = method === 'CREDIT_CARD' ? 'Credit Card Payment' : 'Debit Card Payment';
+            } else if (method === 'UPI') {
+                document.getElementById('upiModal').style.display = 'block';
+            } else if (method === 'NET_BANKING') {
+                document.getElementById('netBankingModal').style.display = 'block';
+            }
+        }
+        
+        function closeAllModals() {
+            document.getElementById('cardModal').style.display = 'none';
+            document.getElementById('upiModal').style.display = 'none';
+            document.getElementById('netBankingModal').style.display = 'none';
+        }
+        
+        // Card Number Formatting
+        function formatCardNumber(input) {
+            let value = input.value.replace(/\s/g, '');
+            let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
+            input.value = formattedValue;
+            document.getElementById('cardNumberDisplay').textContent = formattedValue || '•••• •••• •••• ••••';
+        }
+        
+        function updateCardName(input) {
+            document.getElementById('cardNameDisplay').textContent = input.value || 'YOUR NAME';
+        }
+        
+        function updateCardExpiry(input) {
+            let value = input.value.replace(/\D/g, '');
+            if (value.length >= 2) {
+                value = value.slice(0, 2) + '/' + value.slice(2, 4);
+            }
+            input.value = value;
+            document.getElementById('cardExpiryDisplay').textContent = value || 'MM/YY';
+        }
+        
+        async function processCardPayment() {
+            const cardNumber = document.getElementById('cardNumber').value.replace(/\s/g, '');
+            const cardName = document.getElementById('cardName').value;
+            const expiry = document.getElementById('cardExpiry').value;
+            const cvv = document.getElementById('cardCVV').value;
+            
+            if (!cardNumber || cardNumber.length < 16) {
+                alert('Please enter a valid card number');
+                return;
+            }
+            if (!cardName) {
+                alert('Please enter cardholder name');
+                return;
+            }
+            if (!expiry || expiry.length < 5) {
+                alert('Please enter valid expiry date');
+                return;
+            }
+            if (!cvv || cvv.length < 3) {
+                alert('Please enter valid CVV');
+                return;
+            }
+            
+            await processPayment();
+        }
+        
+        function selectUPIApp(app) {
+            document.querySelectorAll('.upi-app').forEach(el => el.classList.remove('selected'));
+            event.target.closest('.upi-app').classList.add('selected');
+        }
+        
+        async function processUPIPayment() {
+            const upiId = document.getElementById('upiId').value;
+            
+            if (!upiId || !upiId.includes('@')) {
+                alert('Please enter a valid UPI ID');
+                return;
+            }
+            
+            await processPayment();
+        }
+        
+        function selectBank(bank) {
+            document.querySelectorAll('.bank-option').forEach(el => el.classList.remove('selected'));
+            event.target.closest('.bank-option').classList.add('selected');
+            document.getElementById('selectedBank').value = bank;
+        }
+        
+        async function processNetBankingPayment() {
+            const selectedBank = document.getElementById('selectedBank').value;
+            
+            if (!selectedBank) {
+                alert('Please select a bank');
+                return;
+            }
+            
+            await processPayment();
+        }
+        
+        async function processPayment() {
+            const { paymentMethod, deliveryDate, specialInstructions, totalAmount } = window.checkoutData;
+            
+            try {
+                // Create demo payment order
+                const orderResponse = await fetch('/customer/payment/create-order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ amount: totalAmount })
+                });
+                
+                const orderData = await orderResponse.json();
+                
+                // Simulate payment processing
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                
+                // Generate demo payment ID
+                const paymentId = 'PAY_' + Math.random().toString(36).substr(2, 9).toUpperCase();
+                
+                // Verify payment
+                const verifyResponse = await fetch('/customer/payment/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        orderId: orderData.orderId,
+                        paymentId: paymentId,
+                        deliveryDate: deliveryDate,
+                        specialInstructions: specialInstructions
+                    })
+                });
+                
+                const result = await verifyResponse.json();
+                
+                if (result.success) {
+                    alert('✅ Payment Successful!\nOrder #' + result.orderNumber + '\nRedirecting to orders page...');
+                    window.location.href = '/customer/orders';
+                } else {
+                    alert('❌ Payment Failed: ' + result.message);
+                    closeAllModals();
+                }
+            } catch (error) {
+                alert('❌ Payment Error: ' + error.message);
+                closeAllModals();
+            }
+        }
+    </script>
+</head>
+<body>
+    <nav class="navbar">
+        <h2>🛒 Checkout</h2>
+        <div>
+            <a href="/customer/products">Continue Shopping</a>
+            <a href="/customer/cart">Back to Cart</a>
+            <a href="/logout">Logout</a>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div class="checkout-form">
+            <h2>Delivery &amp; Payment Details</h2>
+            
+            <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+            
+            <form id="checkoutForm" action="/customer/order/place" method="post" onsubmit="handlePayment(event)">
+                <div class="form-group">
+                    <label for="deliveryDate">Preferred Delivery Date *</label>
+                    <input type="date" id="deliveryDate" name="deliveryDate" required>
+                    <div class="delivery-date-info">
+                        📅 Select your preferred delivery date. The seller will be notified.
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="paymentMethod">Payment Method *</label>
+                    <select id="paymentMethod" name="paymentMethod" required>
+                        <option value="">Select Payment Method</option>
+                        <option value="CASH_ON_DELIVERY">💵 Cash on Delivery</option>
+                        <option value="CREDIT_CARD">💳 Credit Card</option>
+                        <option value="DEBIT_CARD">💳 Debit Card</option>
+                        <option value="UPI">📱 UPI Payment</option>
+                        <option value="NET_BANKING">🏦 Net Banking</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="specialInstructions">Special Instructions (Optional)</label>
+                    <textarea id="specialInstructions" name="specialInstructions" placeholder="Any special delivery instructions..."></textarea>
+                </div>
+                
+                <button type="submit" class="btn-place-order">Proceed to Payment</button>
+            </form>
+        </div>
+        
+        <div class="order-summary">
+            <h2>Order Summary</h2>
+            
+            <div class="cart-items">
+                <div class="cart-item" th:each="item : ${cart.items}">
+                    <div class="item-name" th:text="${item.product.name}">Product Name</div>
+                    <div class="item-details">
+                        Quantity: <span th:text="${item.quantity}">1</span> × 
+                        Price: <span th:text="'₹' + ${item.product.price}">₹0</span> = 
+                        Total: <span th:text="'₹' + ${item.quantity * item.product.price}">₹0</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="summary-item">
+                <span>Subtotal:</span>
+                <span>₹<span th:text="${#aggregates.sum(cart.items.![quantity * product.price])}">0.00</span></span>
+            </div>
+            
+            <div class="summary-item">
+                <span>Delivery:</span>
+                <span>FREE</span>
+            </div>
+            
+            <div class="summary-total">
+                <span>Total:</span>
+                <span>₹<span id="totalAmount" th:text="${#aggregates.sum(cart.items.![quantity * product.price])}">0.00</span></span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Credit/Debit Card Modal -->
+    <div id="cardModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">💳 Credit Card Payment</h3>
+                <span class="close" onclick="closeAllModals()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="card-form">
+                    <div class="card-display">
+                        <div style="text-align: right; margin-bottom: 20px;">
+                            <div style="font-size: 12px;">CARD</div>
+                        </div>
+                        <div class="card-number-display" id="cardNumberDisplay">•••• •••• •••• ••••</div>
+                        <div class="card-details">
+                            <div>
+                                <div style="font-size: 10px; opacity: 0.8;">CARD HOLDER</div>
+                                <div id="cardNameDisplay" style="font-size: 14px;">YOUR NAME</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 10px; opacity: 0.8;">EXPIRES</div>
+                                <div id="cardExpiryDisplay" style="font-size: 14px;">MM/YY</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card-icons">
+                        <div class="card-icon">VISA</div>
+                        <div class="card-icon">MC</div>
+                        <div class="card-icon">AMEX</div>
+                        <div class="card-icon">RUPAY</div>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>Card Number</label>
+                        <input type="text" id="cardNumber" placeholder="1234 5678 9012 3456" maxlength="19" oninput="formatCardNumber(this)">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>Cardholder Name</label>
+                        <input type="text" id="cardName" placeholder="JOHN DOE" oninput="updateCardName(this)">
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="input-group">
+                            <label>Expiry Date</label>
+                            <input type="text" id="cardExpiry" placeholder="MM/YY" maxlength="5" oninput="updateCardExpiry(this)">
+                        </div>
+                        <div class="input-group">
+                            <label>CVV</label>
+                            <input type="password" id="cardCVV" placeholder="123" maxlength="4">
+                        </div>
+                    </div>
+                    
+                    <div class="demo-note">
+                        🎭 Demo Mode: Use any 16-digit number
+                    </div>
+                    
+                    <button onclick="processCardPayment()" class="btn-pay">Pay Now</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- UPI Modal -->
+    <div id="upiModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📱 UPI Payment</h3>
+                <span class="close" onclick="closeAllModals()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="upi-form">
+                    <div class="upi-logo">💰</div>
+                    <h3>Pay using UPI</h3>
+                    
+                    <div class="upi-input">
+                        <label style="display: block; margin-bottom: 10px; text-align: left; font-weight: bold;">Enter UPI ID</label>
+                        <input type="text" id="upiId" placeholder="yourname@upi" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px;">
+                    </div>
+                    
+                    <p style="margin: 20px 0; color: #666;">OR</p>
+                    
+                    <h4 style="margin-bottom: 15px;">Select UPI App</h4>
+                    <div class="upi-apps">
+                        <div class="upi-app" onclick="selectUPIApp('gpay')">
+                            <div class="upi-app-icon">G</div>
+                            <div style="font-size: 12px;">Google Pay</div>
+                        </div>
+                        <div class="upi-app" onclick="selectUPIApp('phonepe')">
+                            <div class="upi-app-icon">Φ</div>
+                            <div style="font-size: 12px;">PhonePe</div>
+                        </div>
+                        <div class="upi-app" onclick="selectUPIApp('paytm')">
+                            <div class="upi-app-icon">P</div>
+                            <div style="font-size: 12px;">Paytm</div>
+                        </div>
+                        <div class="upi-app" onclick="selectUPIApp('bhim')">
+                            <div class="upi-app-icon">B</div>
+                            <div style="font-size: 12px;">BHIM</div>
+                        </div>
+                    </div>
+                    
+                    <div class="demo-note">
+                        🎭 Demo Mode: Use any UPI ID (e.g., demo@upi)
+                    </div>
+                    
+                    <button onclick="processUPIPayment()" class="btn-pay">Pay with UPI</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Net Banking Modal -->
+    <div id="netBankingModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🏦 Net Banking</h3>
+                <span class="close" onclick="closeAllModals()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <h3 style="margin-bottom: 20px; text-align: center;">Select Your Bank</h3>
+                
+                <input type="hidden" id="selectedBank">
+                
+                <div class="bank-grid">
+                    <div class="bank-option" onclick="selectBank('SBI')">
+                        <div class="bank-icon">🏦</div>
+                        <div>State Bank of India</div>
+                    </div>
+                    <div class="bank-option" onclick="selectBank('HDFC')">
+                        <div class="bank-icon">🏦</div>
+                        <div>HDFC Bank</div>
+                    </div>
+                    <div class="bank-option" onclick="selectBank('ICICI')">
+                        <div class="bank-icon">🏦</div>
+                        <div>ICICI Bank</div>
+                    </div>
+                    <div class="bank-option" onclick="selectBank('Axis')">
+                        <div class="bank-icon">🏦</div>
+                        <div>Axis Bank</div>
+                    </div>
+                    <div class="bank-option" onclick="selectBank('Kotak')">
+                        <div class="bank-icon">🏦</div>
+                        <div>Kotak Bank</div>
+                    </div>
+                    <div class="bank-option" onclick="selectBank('PNB')">
+                        <div class="bank-icon">🏦</div>
+                        <div>Punjab National Bank</div>
+                    </div>
+                </div>
+                
+                <div class="demo-note">
+                    🎭 Demo Mode: Select any bank to continue
+                </div>
+                
+                <button onclick="processNetBankingPayment()" class="btn-pay">Continue to Bank</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

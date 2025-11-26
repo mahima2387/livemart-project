@@ -1,0 +1,99 @@
+package com.livemart.controller;
+
+import com.livemart.model.User;
+import com.livemart.model.UserRole;
+import com.livemart.service.UserService;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+@Controller
+public class AuthController {
+    
+    private final UserService userService;
+    
+    public AuthController(UserService userService) {
+        this.userService = userService;
+    }
+    
+    @GetMapping("/")
+    public String home() {
+        return "index";
+    }
+    
+    @GetMapping("/register")
+    public String showRegistrationForm(Model model) {
+        model.addAttribute("user", new User());
+        model.addAttribute("roles", UserRole.values());
+        return "register";
+    }
+    
+    @PostMapping("/register")
+    public String registerUser(@ModelAttribute User user,
+                              @RequestParam(required = false) Double latitude,
+                              @RequestParam(required = false) Double longitude,
+                              RedirectAttributes redirectAttributes) {
+        try {
+            // Set location if provided
+            if (latitude != null && longitude != null) {
+                user.setLatitude(latitude);
+                user.setLongitude(longitude);
+            }
+            
+            userService.registerUser(user);
+            redirectAttributes.addFlashAttribute("success", "Registration successful! Please check your email for OTP.");
+            redirectAttributes.addFlashAttribute("email", user.getEmail());
+            return "redirect:/verify-otp";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            return "redirect:/register";
+        }
+    }
+    
+    @GetMapping("/verify-otp")
+    public String showOtpVerificationForm(Model model) {
+        return "verify-otp";
+    }
+    
+    @PostMapping("/verify-otp")
+    public String verifyOtp(@RequestParam String email, @RequestParam String otp, RedirectAttributes redirectAttributes) {
+        try {
+            boolean verified = userService.verifyOTP(email, otp);
+            if (verified) {
+                redirectAttributes.addFlashAttribute("success", "Email verified successfully! Please login.");
+                return "redirect:/login";
+            } else {
+                redirectAttributes.addFlashAttribute("error", "Invalid or expired OTP");
+                redirectAttributes.addFlashAttribute("email", email);
+                return "redirect:/verify-otp";
+            }
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            return "redirect:/verify-otp";
+        }
+    }
+    
+    @PostMapping("/resend-otp")
+    public String resendOtp(@RequestParam String email, RedirectAttributes redirectAttributes) {
+        try {
+            userService.resendOTP(email);
+            redirectAttributes.addFlashAttribute("success", "OTP resent to your email");
+            redirectAttributes.addFlashAttribute("email", email);
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/verify-otp";
+    }
+    
+    @GetMapping("/login")
+    public String showLoginForm(@RequestParam(required = false) String error, @RequestParam(required = false) String logout, Model model) {
+        if (error != null) {
+            model.addAttribute("error", "Invalid email or password");
+        }
+        if (logout != null) {
+            model.addAttribute("success", "You have been logged out successfully");
+        }
+        return "login";
+    }
+}

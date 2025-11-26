@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Order Details - Live MART</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f5f5f5; }
+        .navbar { background: #764ba2; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+        .navbar h2 { font-size: 24px; }
+        .navbar a { color: white; text-decoration: none; margin-left: 20px; padding: 8px 15px; border-radius: 5px; }
+        .navbar a:hover { background: rgba(255,255,255,0.2); }
+        .container { max-width: 900px; margin: 30px auto; padding: 0 20px; }
+        .order-box { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .order-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #eee; }
+        .order-number { font-size: 24px; font-weight: bold; color: #764ba2; }
+        .section { margin: 25px 0; padding: 20px; background: #f9f9f9; border-radius: 5px; }
+        .section h3 { color: #333; margin-bottom: 15px; }
+        .section p { margin: 5px 0; color: #666; }
+        .status-update { background: #f3e8f8; padding: 20px; border-radius: 5px; margin: 25px 0; }
+        .status-update h3 { color: #764ba2; margin-bottom: 15px; }
+        .status-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+        .status-btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn-pending { background: #fff3cd; color: #856404; }
+        .btn-confirmed { background: #d1ecf1; color: #0c5460; }
+        .btn-processing { background: #cce5ff; color: #004085; }
+        .btn-shipped { background: #d4edda; color: #155724; }
+        .btn-delivered { background: #28a745; color: white; }
+        .status-btn:hover { transform: translateY(-2px); opacity: 0.9; }
+        .items-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        .items-table th { background: #764ba2; color: white; padding: 12px; text-align: left; }
+        .items-table td { padding: 12px; border-bottom: 1px solid #eee; }
+        .total { font-size: 24px; font-weight: bold; color: #764ba2; text-align: right; margin-top: 20px; }
+        .btn { display: inline-block; padding: 12px 30px; background: #764ba2; color: white; text-decoration: none; border-radius: 5px; margin-top: 20px; }
+        .btn:hover { background: #63408a; }
+        .alert { padding: 15px; margin-bottom: 20px; border-radius: 5px; }
+        .alert-success { background: #d4edda; color: #155724; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <h2>🏭 Live MART - Wholesaler</h2>
+        <div>
+            <a href="/dashboard">Dashboard</a>
+            <a href="/wholesaler/products">My Products</a>
+            <a href="/wholesaler/orders">Orders</a>
+            <a href="/logout">Logout</a>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+        
+        <div class="order-box">
+            <div class="order-header">
+                <div class="order-number" th:text="'Order #' + ${order.orderNumber}">Order #</div>
+            </div>
+            
+            <div class="status-update">
+                <h3>Update Order Status</h3>
+                <p style="margin-bottom: 15px;">Current Status: <strong th:text="${order.status}">Status</strong></p>
+                <div class="status-buttons">
+                    <form th:action="@{/wholesaler/order/{id}/status(id=${order.id})}" method="post" style="display: inline;">
+                        <input type="hidden" name="status" value="PENDING">
+                        <button type="submit" class="status-btn btn-pending">⏳ Pending</button>
+                    </form>
+                    <form th:action="@{/wholesaler/order/{id}/status(id=${order.id})}" method="post" style="display: inline;">
+                        <input type="hidden" name="status" value="CONFIRMED">
+                        <button type="submit" class="status-btn btn-confirmed">✓ Confirm Order</button>
+                    </form>
+                    <form th:action="@{/wholesaler/order/{id}/status(id=${order.id})}" method="post" style="display: inline;">
+                        <input type="hidden" name="status" value="PROCESSING">
+                        <button type="submit" class="status-btn btn-processing">📦 Processing</button>
+                    </form>
+                    <form th:action="@{/wholesaler/order/{id}/status(id=${order.id})}" method="post" style="display: inline;">
+                        <input type="hidden" name="status" value="SHIPPED">
+                        <button type="submit" class="status-btn btn-shipped">🚚 Shipped</button>
+                    </form>
+                    <form th:action="@{/wholesaler/order/{id}/status(id=${order.id})}" method="post" style="display: inline;">
+                        <input type="hidden" name="status" value="DELIVERED">
+                        <button type="submit" class="status-btn btn-delivered">✅ Delivered</button>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h3>Order Information</h3>
+                <p><strong>Customer:</strong> <span th:text="${order.user.fullName}">Customer</span></p>
+                <p><strong>Email:</strong> <span th:text="${order.user.email}">Email</span></p>
+                <p><strong>Phone:</strong> <span th:text="${order.user.phone}">Phone</span></p>
+                <p><strong>Order Date:</strong> <span th:text="${#temporals.format(order.createdAt, 'dd MMM yyyy, HH:mm')}">Date</span></p>
+                <p><strong>Payment Method:</strong> <span th:text="${order.paymentMethod}">Method</span></p>
+                <p><strong>Payment Status:</strong> <span th:text="${order.paymentCompleted ? 'Paid' : 'Pending'}">Status</span></p>
+            </div>
+            
+            <div class="section">
+                <h3>Delivery Address</h3>
+                <p th:text="${order.deliveryAddress}">Address</p>
+                <p><span th:text="${order.deliveryCity}">City</span>, <span th:text="${order.deliveryState}">State</span> - <span th:text="${order.deliveryPincode}">Pincode</span></p>
+                <p>Phone: <span th:text="${order.deliveryPhone}">Phone</span></p>
+            </div>
+            
+            <div class="section">
+                <h3>Order Items</h3>
+                <table class="items-table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Price</th>
+                            <th>Quantity</th>
+                            <th>Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="item : ${order.orderItems}">
+                            <td th:text="${item.product.name}">Product</td>
+                            <td th:text="'₹' + ${item.price}">Price</td>
+                            <td th:text="${item.quantity}">Qty</td>
+                            <td th:text="'₹' + ${item.subtotal}">Subtotal</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="total" th:text="'Total: ₹' + ${order.totalAmount}">Total</div>
+            </div>
+            
+            <a href="/wholesaler/orders" class="btn">Back to Orders</a>
+        </div>
+    </div>
+</body>
+</html>

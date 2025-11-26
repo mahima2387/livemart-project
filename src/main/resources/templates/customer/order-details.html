@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Order Details - Live MART</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f5f5f5; }
+        .navbar { background: #667eea; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+        .navbar h2 { font-size: 24px; }
+        .navbar a { color: white; text-decoration: none; margin-left: 20px; padding: 8px 15px; border-radius: 5px; }
+        .navbar a:hover { background: rgba(255,255,255,0.2); }
+        .container { max-width: 900px; margin: 30px auto; padding: 0 20px; }
+        .order-box { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .order-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #eee; }
+        .order-number { font-size: 24px; font-weight: bold; color: #667eea; }
+        .order-status { padding: 8px 20px; border-radius: 20px; font-size: 16px; font-weight: bold; }
+        .status-PENDING { background: #fff3cd; color: #856404; }
+        .status-DELIVERED { background: #28a745; color: white; }
+        .section { margin: 25px 0; padding: 20px; background: #f9f9f9; border-radius: 5px; }
+        .section h3 { color: #333; margin-bottom: 15px; }
+        .section p { margin: 5px 0; color: #666; }
+        .items-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        .items-table th { background: #667eea; color: white; padding: 12px; text-align: left; }
+        .items-table td { padding: 12px; border-bottom: 1px solid #eee; }
+        .total { font-size: 24px; font-weight: bold; color: #667eea; text-align: right; margin-top: 20px; }
+        .btn { display: inline-block; padding: 12px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; margin-top: 20px; }
+        .btn:hover { background: #5568d3; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <h2>🛒 Live MART</h2>
+        <div>
+            <a href="/dashboard">Dashboard</a>
+            <a href="/customer/products">Products</a>
+            <a href="/customer/cart">Cart</a>
+            <a href="/customer/orders">Orders</a>
+            <a href="/logout">Logout</a>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div class="order-box">
+            <div class="order-header">
+                <div class="order-number" th:text="'Order #' + ${order.orderNumber}">Order #</div>
+                <div class="order-status" th:classappend="'status-' + ${order.status}" th:text="${order.status}">Status</div>
+            </div>
+            
+            <div class="section">
+                <h3>Order Information</h3>
+                <p><strong>Order Date:</strong> <span th:text="${#temporals.format(order.createdAt, 'dd MMM yyyy, HH:mm')}">Date</span></p>
+                <p><strong>Payment Method:</strong> <span th:text="${order.paymentMethod}">Method</span></p>
+                <p><strong>Payment Status:</strong> <span th:text="${order.paymentCompleted ? 'Paid' : 'Pending'}">Status</span></p>
+                <p th:if="${order.estimatedDeliveryDate != null}"><strong>Estimated Delivery:</strong> <span th:text="${#temporals.format(order.estimatedDeliveryDate, 'dd MMM yyyy')}">Date</span></p>
+                <p th:if="${order.specialInstructions != null}"><strong>Special Instructions:</strong> <span th:text="${order.specialInstructions}">Instructions</span></p>
+            </div>
+            
+            <div class="section">
+                <h3>Delivery Address</h3>
+                <p th:text="${order.deliveryAddress}">Address</p>
+                <p><span th:text="${order.deliveryCity}">City</span>, <span th:text="${order.deliveryState}">State</span> - <span th:text="${order.deliveryPincode}">Pincode</span></p>
+                <p>Phone: <span th:text="${order.deliveryPhone}">Phone</span></p>
+            </div>
+            
+            <div class="section">
+                <h3>Order Items</h3>
+                <table class="items-table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Price</th>
+                            <th>Quantity</th>
+                            <th>Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="item : ${order.orderItems}">
+                            <td th:text="${item.product.name}">Product</td>
+                            <td th:text="'₹' + ${item.price}">Price</td>
+                            <td th:text="${item.quantity}">Qty</td>
+                            <td th:text="'₹' + ${item.subtotal}">Subtotal</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="total" th:text="'Total: ₹' + ${order.totalAmount}">Total</div>
+            </div>
+            
+            <a href="/customer/orders" class="btn">Back to Orders</a>
+        </div>
+    </div>
+</body>
+</html>

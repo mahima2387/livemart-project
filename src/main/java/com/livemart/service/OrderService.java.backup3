@@ -1,0 +1,129 @@
+package com.livemart.service;
+
+import com.livemart.model.*;
+import com.livemart.repository.OrderRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+
+@Service
+public class OrderService {
+    
+    private final OrderRepository orderRepository;
+    private final CartService cartService;
+    private final ProductService productService;
+    private final NotificationService notificationService;
+    
+    public OrderService(OrderRepository orderRepository, CartService cartService, 
+                       ProductService productService, NotificationService notificationService) {
+        this.orderRepository = orderRepository;
+        this.cartService = cartService;
+        this.productService = productService;
+        this.notificationService = notificationService;
+    }
+    
+    @Transactional
+    public Order createOrder(User user, PaymentMethod paymentMethod, String specialInstructions) {
+        Cart cart = cartService.getOrCreateCart(user);
+        
+        if (cart.getItems().isEmpty()) {
+            throw new RuntimeException("Cart is empty");
+        }
+        
+        Order order = new Order();
+        order.setOrderNumber("ORD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+        order.setUser(user);
+        order.setStatus(OrderStatus.PENDING);
+        order.setPaymentMethod(paymentMethod);
+        order.setPaymentCompleted(paymentMethod == PaymentMethod.ONLINE);
+        order.setSpecialInstructions(specialInstructions);
+        
+        // Set delivery address
+        order.setDeliveryAddress(user.getAddress());
+        order.setDeliveryCity(user.getCity());
+        order.setDeliveryState(user.getState());
+        order.setDeliveryPincode(user.getPincode());
+        order.setDeliveryPhone(user.getPhone());
+        
+        // Set estimated delivery date (5 days from now)
+        order.setEstimatedDeliveryDate(LocalDateTime.now().plusDays(5));
+        
+        Double totalAmount = 0.0;
+        
+        for (CartItem cartItem : cart.getItems()) {
+            OrderItem orderItem = new OrderItem();
+            orderItem.setOrder(order);
+            orderItem.setProduct(cartItem.getProduct());
+            orderItem.setQuantity(cartItem.getQuantity());
+            orderItem.setPrice(cartItem.getProduct().getPrice());
+            orderItem.setSubtotal(cartItem.getQuantity() * cartItem.getProduct().getPrice());
+            
+            order.getOrderItems().add(orderItem);
+            totalAmount += orderItem.getSubtotal();
+            
+            // Reduce stock
+            productService.reduceStock(cartItem.getProduct().getId(), cartItem.getQuantity());
+        }
+        
+        order.setTotalAmount(totalAmount);
+        
+        Order savedOrder = orderRepository.save(order);
+        
+        // Send notifications
+        notificationService.notifyOrderPlaced(savedOrder);
+        
+        // Clear cart
+        cartService.clearCart(user);
+        
+        return savedOrder;
+    }
+    
+    public List<Order> getUserOrders(User user) {
+        return orderRepository.findByUserOrderByCreatedAtDesc(user);
+    }
+    
+    public List<Order> getAllOrders() {
+        return orderRepository.findAllByOrderByCreatedAtDesc();
+    }
+    
+    public Order getOrderById(Long orderId) {
+        return orderRepository.findById(orderId)
+            .orElseThrow(() -> new RuntimeException("Order not found"));
+    }
+    
+    @Transactional
+    public void updateOrderStatus(Long orderId, OrderStatus newStatus) {
+        Order order = getOrderById(orderId);
+        OrderStatus oldStatus = order.getStatus();
+        order.setStatus(newStatus);
+        orderRepository.save(order);
+        
+        // Send notification only if status actually changed
+        if (oldStatus != newStatus) {
+            notificationService.notifyOrderStatusUpdate(order, newStatus);
+        }
+    }
+    
+    @Transactional
+    public void cancelOrder(Long orderId) {
+        Order order = getOrderById(orderId);
+        
+        if (order.getStatus() == OrderStatus.DELIVERED) {
+            throw new RuntimeException("Cannot cancel a delivered order");
+        }
+        
+        order.setStatus(OrderStatus.CANCELLED);
+        orderRepository.save(order);
+        
+        // Restore stock
+        for (OrderItem item : order.getOrderItems()) {
+            productService.restockProduct(item.getProduct().getId(), item.getQuantity());
+        }
+        
+        // Send notification
+        notificationService.notifyOrderStatusUpdate(order, OrderStatus.CANCELLED);
+    }
+}

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>My Orders - Live MART</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f5f5f5; }
+        .navbar { background: #667eea; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+        .navbar h2 { font-size: 24px; }
+        .navbar a { color: white; text-decoration: none; margin-left: 20px; padding: 8px 15px; border-radius: 5px; }
+        .navbar a:hover { background: rgba(255,255,255,0.2); }
+        .container { max-width: 1400px; margin: 30px auto; padding: 0 20px; }
+        .alert { padding: 15px; margin-bottom: 20px; border-radius: 5px; }
+        .alert-success { background: #d4edda; color: #155724; }
+        .orders-grid { display: grid; gap: 20px; }
+        .order-card { background: white; border-radius: 10px; padding: 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .order-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #eee; }
+        .order-number { font-size: 18px; font-weight: bold; color: #333; }
+        .order-date { color: #666; font-size: 14px; margin-top: 5px; }
+        .status { padding: 8px 15px; border-radius: 20px; font-size: 13px; font-weight: bold; }
+        .status-pending { background: #ffc107; color: #000; }
+        .status-confirmed { background: #17a2b8; color: white; }
+        .status-processing { background: #007bff; color: white; }
+        .status-shipped { background: #6f42c1; color: white; }
+        .status-delivered { background: #28a745; color: white; }
+        .status-cancelled { background: #dc3545; color: white; }
+        .order-items { margin: 15px 0; }
+        .order-item { padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+        .item-name { font-weight: bold; color: #333; }
+        .item-details { color: #666; font-size: 14px; margin-top: 5px; }
+        .order-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 15px; border-top: 2px solid #eee; }
+        .order-total { font-size: 20px; font-weight: bold; color: #28a745; }
+        .delivery-date { color: #667eea; font-size: 14px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <h2>📦 My Orders</h2>
+        <div>
+            <a href="/dashboard">Dashboard</a>
+            <a href="/customer/products">Products</a>
+            <a href="/customer/cart">Cart</a>
+            <a href="/logout">Logout</a>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+        
+        <h1 style="margin-bottom: 30px;">My Orders</h1>
+        
+        <div class="orders-grid" th:if="${!orders.isEmpty()}">
+            <div class="order-card" th:each="order : ${orders}">
+                <div class="order-header">
+                    <div>
+                        <div class="order-number" th:text="'Order #' + ${order.orderNumber}">Order #ORD-001</div>
+                        <div class="order-date" th:text="'Placed on ' + ${#temporals.format(order.createdAt, 'dd MMM yyyy, hh:mm a')}">Date</div>
+                        <div class="delivery-date" th:if="${order.deliveryDate != null}">
+                            📅 Expected Delivery: <span th:text="${#temporals.format(order.deliveryDate, 'dd MMM yyyy')}"></span>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="status" 
+                              th:classappend="${'status-' + #strings.toLowerCase(order.status)}"
+                              th:text="${order.status}">Status</span>
+                    </div>
+                </div>
+                
+                <div class="order-items">
+                    <div class="order-item" th:each="item : ${order.orderItems}">
+                        <div class="item-name" th:text="${item.product.name}">Product Name</div>
+                        <div class="item-details">
+                            Quantity: <span th:text="${item.quantity}">1</span> × 
+                            ₹<span th:text="${item.price}">0</span> = 
+                            ₹<span th:text="${item.quantity * item.price}">0</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="order-footer">
+                    <div class="order-total">
+                        Total: ₹<span th:text="${order.totalAmount}">0.00</span>
+                    </div>
+                    <div>
+                        <span th:text="'Payment: ' + ${order.paymentMethod}">Payment Method</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <p th:if="${orders.isEmpty()}" style="text-align: center; padding: 60px; color: #666; font-size: 18px;">
+            You haven't placed any orders yet. <a href="/customer/products" style="color: #667eea;">Start shopping</a>!
+        </p>
+    </div>
+</body>
+</html>

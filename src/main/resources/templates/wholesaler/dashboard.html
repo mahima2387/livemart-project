@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Wholesaler Dashboard - Live MART</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f5f5f5; }
+        .navbar { background: #667eea; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+        .navbar h2 { font-size: 24px; }
+        .navbar a { color: white; text-decoration: none; margin-left: 20px; padding: 8px 15px; border-radius: 5px; }
+        .navbar a:hover { background: rgba(255,255,255,0.2); }
+        .notification-bell { position: relative; font-size: 24px; }
+        .notification-badge { position: absolute; top: -8px; right: -8px; background: #dc3545; color: white; border-radius: 50%; min-width: 20px; height: 20px; font-size: 12px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
+        .welcome { background: white; padding: 30px; border-radius: 10px; margin-bottom: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .welcome h1 { color: #667eea; margin-bottom: 10px; }
+        .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+        .card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center; transition: 0.3s; }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 5px 20px rgba(0,0,0,0.15); }
+        .card h3 { color: #667eea; margin-bottom: 15px; font-size: 20px; }
+        .card p { color: #666; margin-bottom: 20px; }
+        .btn { display: inline-block; padding: 10px 25px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; transition: 0.3s; }
+        .btn:hover { background: #5568d3; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <h2>🏭 Wholesaler Dashboard</h2>
+        <div>
+            <span th:text="'Welcome, ' + ${user.fullName}">Welcome</span>
+            <a href="/wholesaler/products">My Products</a>
+            <a href="/wholesaler/orders">Orders</a>
+            <a href="/notifications" class="notification-bell">
+                🔔
+                <span th:if="${unreadCount > 0}" class="notification-badge" th:text="${unreadCount}">0</span>
+            </a>
+            <a href="/logout">Logout</a>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div class="welcome">
+            <h1>Welcome to Your Wholesaler Dashboard! 🏭</h1>
+            <p>Manage your wholesale products and B2B orders</p>
+        </div>
+        
+        <div class="cards">
+            <div class="card">
+                <h3>📦 My Products</h3>
+                <p th:text="'Total: ' + ${myProducts != null ? myProducts.size() : 0}">Total: 0</p>
+                <a href="/wholesaler/products" class="btn">Manage Products</a>
+            </div>
+            
+            <div class="card">
+                <h3>➕ Add Wholesale Product</h3>
+                <p>List new products for bulk selling</p>
+                <a href="/wholesaler/product/add" class="btn">Add Product</a>
+            </div>
+            
+            <div class="card">
+                <h3>📋 B2B Orders</h3>
+                <p th:text="'Total: ' + ${orders != null ? orders.size() : 0}">Total: 0</p>
+                <a href="/wholesaler/orders" class="btn">View Orders</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

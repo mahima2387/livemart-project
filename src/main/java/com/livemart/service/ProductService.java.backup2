@@ -1,0 +1,99 @@
+package com.livemart.service;
+
+import com.livemart.model.Product;
+import com.livemart.model.User;
+import com.livemart.repository.ProductRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+@Service
+@Transactional
+public class ProductService {
+    
+    private final ProductRepository productRepository;
+    
+    public ProductService(ProductRepository productRepository) {
+        this.productRepository = productRepository;
+    }
+    
+    public Product createProduct(Product product) {
+        return productRepository.save(product);
+    }
+    
+    public Product updateProduct(Product product) {
+        Product existing = productRepository.findById(product.getId())
+                .orElseThrow(() -> new RuntimeException("Product not found"));
+        
+        existing.setName(product.getName());
+        existing.setDescription(product.getDescription());
+        existing.setCategory(product.getCategory());
+        existing.setPrice(product.getPrice());
+        existing.setStockQuantity(product.getStockQuantity());
+        existing.setImageUrl(product.getImageUrl());
+        existing.setAvailable(product.isAvailable());
+        existing.setAvailabilityDate(product.getAvailabilityDate());
+        
+        return productRepository.save(existing);
+    }
+    
+    public void deleteProduct(Long id) {
+        productRepository.deleteById(id);
+    }
+    
+    public Product getProductById(Long id) {
+        return productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Product not found"));
+    }
+    
+    public List<Product> getAllProducts() {
+        return productRepository.findAll();
+    }
+    
+    public List<Product> getAvailableProducts() {
+        return productRepository.findAvailableInStock();
+    }
+    
+    public List<Product> getProductsByCategory(String category) {
+        return productRepository.findByCategoryAndAvailable(category);
+    }
+    
+    public List<Product> getProductsBySeller(User seller) {
+        return productRepository.findBySeller(seller);
+    }
+    
+    public List<Product> searchProducts(String keyword) {
+        return productRepository.searchProducts(keyword);
+    }
+    
+    public List<Product> filterByPriceRange(Double minPrice, Double maxPrice) {
+        return productRepository.findByPriceRangeAndAvailable(minPrice, maxPrice);
+    }
+    
+    public List<String> getAllCategories() {
+        return productRepository.findAllCategories();
+    }
+    
+    public void updateStock(Long productId, Integer quantity) {
+        Product product = getProductById(productId);
+        int newStock = product.getStockQuantity() - quantity;
+        
+        if (newStock < 0) {
+            throw new RuntimeException("Insufficient stock");
+        }
+        
+        product.setStockQuantity(newStock);
+        if (newStock == 0) {
+            product.setAvailable(false);
+        }
+        productRepository.save(product);
+    }
+    
+    public void restockProduct(Long productId, Integer quantity) {
+        Product product = getProductById(productId);
+        product.setStockQuantity(product.getStockQuantity() + quantity);
+        product.setAvailable(true);
+        productRepository.save(product);
+    }
+}

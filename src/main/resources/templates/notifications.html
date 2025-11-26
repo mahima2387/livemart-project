@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Notifications - Live MART</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f5f5f5; }
+        .navbar { background: #667eea; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+        .navbar h2 { font-size: 24px; }
+        .navbar .nav-links { display: flex; align-items: center; gap: 15px; }
+        .navbar a { color: white; text-decoration: none; padding: 8px 15px; border-radius: 5px; }
+        .navbar a:hover { background: rgba(255,255,255,0.2); }
+        .notification-bell { position: relative; font-size: 24px; cursor: pointer; }
+        .notification-badge { position: absolute; top: -5px; right: -5px; background: #dc3545; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .container { max-width: 900px; margin: 30px auto; padding: 0 20px; }
+        .header { background: white; padding: 25px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { color: #667eea; }
+        .btn { padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; text-decoration: none; display: inline-block; }
+        .btn:hover { background: #5568d3; }
+        .btn-secondary { background: #6c757d; }
+        .btn-secondary:hover { background: #5a6268; }
+        .notification-card { background: white; padding: 20px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: flex-start; transition: 0.3s; border-left: 4px solid #667eea; }
+        .notification-card.unread { background: #f0f4ff; border-left-color: #667eea; }
+        .notification-card.read { opacity: 0.7; border-left-color: #ddd; }
+        .notification-card:hover { transform: translateX(5px); }
+        .notification-content { flex: 1; }
+        .notification-icon { font-size: 32px; margin-right: 15px; }
+        .notification-title { font-size: 18px; font-weight: bold; color: #333; margin-bottom: 5px; }
+        .notification-message { color: #666; margin-bottom: 10px; line-height: 1.5; }
+        .notification-time { color: #999; font-size: 14px; }
+        .notification-actions { display: flex; flex-direction: column; gap: 10px; }
+        .empty-notifications { text-align: center; padding: 60px 20px; background: white; border-radius: 10px; }
+        .empty-notifications .icon { font-size: 64px; margin-bottom: 20px; opacity: 0.3; }
+        .alert { padding: 15px; margin-bottom: 20px; border-radius: 5px; }
+        .alert-success { background: #d4edda; color: #155724; }
+        .alert-danger { background: #f8d7da; color: #721c24; }
+        .type-badge { padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: bold; display: inline-block; margin-bottom: 10px; }
+        .type-ORDER_PLACED { background: #d1ecf1; color: #0c5460; }
+        .type-ORDER_CONFIRMED { background: #d4edda; color: #155724; }
+        .type-ORDER_SHIPPED { background: #cce5ff; color: #004085; }
+        .type-ORDER_DELIVERED { background: #28a745; color: white; }
+        .type-NEW_ORDER_RECEIVED { background: #fff3cd; color: #856404; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <h2>🔔 Notifications</h2>
+        <div class="nav-links">
+            <a href="/dashboard">Dashboard</a>
+            <a href="/notifications">
+                <span class="notification-bell">
+                    🔔
+                    <span class="notification-badge" th:if="${unreadCount > 0}" th:text="${unreadCount}">0</span>
+                </span>
+            </a>
+            <a href="/logout">Logout</a>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+        <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+        
+        <div class="header">
+            <h1>All Notifications</h1>
+            <form action="/notifications/mark-all-read" method="post" style="display: inline;">
+                <button type="submit" class="btn" th:if="${unreadCount > 0}">Mark All as Read</button>
+            </form>
+        </div>
+        
+        <div th:if="${notifications != null and !notifications.isEmpty()}">
+            <div class="notification-card" th:each="notification : ${notifications}" 
+                 th:classappend="${notification.isRead} ? 'read' : 'unread'">
+                <div style="display: flex; flex: 1;">
+                    <div class="notification-icon" th:switch="${notification.type.name()}">
+                        <span th:case="'ORDER_PLACED'">🛍️</span>
+                        <span th:case="'ORDER_CONFIRMED'">✅</span>
+                        <span th:case="'ORDER_PROCESSING'">📦</span>
+                        <span th:case="'ORDER_SHIPPED'">🚚</span>
+                        <span th:case="'ORDER_DELIVERED'">✨</span>
+                        <span th:case="'NEW_ORDER_RECEIVED'">🔔</span>
+                        <span th:case="*">📬</span>
+                    </div>
+                    <div class="notification-content">
+                        <span class="type-badge" th:classappend="'type-' + ${notification.type.name()}" 
+                              th:text="${#strings.replace(notification.type.name(), '_', ' ')}">Type</span>
+                        <div class="notification-title" th:text="${notification.title}">Title</div>
+                        <div class="notification-message" th:text="${notification.message}">Message</div>
+                        <div class="notification-time" th:text="${#temporals.format(notification.createdAt, 'dd MMM yyyy, HH:mm')}">Time</div>
+                    </div>
+                </div>
+                <div class="notification-actions">
+                    <form th:if="${!notification.isRead}" th:action="@{/notifications/mark-read/{id}(id=${notification.id})}" method="post">
+                        <button type="submit" class="btn btn-secondary" style="font-size: 12px; padding: 5px 10px;">Mark as Read</button>
+                    </form>
+                    <a th:if="${notification.relatedOrderId != null}" 
+                       th:href="@{/customer/order/{id}(id=${notification.relatedOrderId})}" 
+                       class="btn" style="font-size: 12px; padding: 5px 10px;">View Order</a>
+                </div>
+            </div>
+        </div>
+        
+        <div th:if="${notifications == null or notifications.isEmpty()}" class="empty-notifications">
+            <div class="icon">🔔</div>
+            <h2>No Notifications Yet</h2>
+            <p style="color: #666; margin-top: 10px;">You're all caught up! New notifications will appear here.</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>B2B Orders - Live MART</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f5f5f5; }
+        .navbar { background: #667eea; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+        .navbar h2 { font-size: 24px; }
+        .navbar a { color: white; text-decoration: none; margin-left: 20px; padding: 8px 15px; border-radius: 5px; }
+        .navbar a:hover { background: rgba(255,255,255,0.2); }
+        .container { max-width: 1600px; margin: 30px auto; padding: 0 20px; }
+        .header { margin-bottom: 30px; }
+        .alert { padding: 15px; margin-bottom: 20px; border-radius: 5px; }
+        .alert-success { background: #d4edda; color: #155724; }
+        .alert-error { background: #f8d7da; color: #721c24; }
+        .orders-table { background: white; border-radius: 10px; overflow-x: auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #667eea; color: white; padding: 15px; text-align: left; font-size: 14px; white-space: nowrap; }
+        td { padding: 15px; border-bottom: 1px solid #ddd; font-size: 14px; }
+        tr:hover { background: #f9f9f9; }
+        .status { padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: bold; }
+        .status-pending { background: #ffc107; color: #000; }
+        .status-confirmed { background: #17a2b8; color: white; }
+        .status-processing { background: #007bff; color: white; }
+        .status-shipped { background: #6f42c1; color: white; }
+        .status-delivered { background: #28a745; color: white; }
+        .status-cancelled { background: #dc3545; color: white; }
+        .actions { display: flex; gap: 8px; }
+        select { padding: 5px 10px; border: 1px solid #ddd; border-radius: 5px; }
+        .btn-update { padding: 5px 10px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 12px; }
+        .btn-update:hover { background: #218838; }
+        .delivery-date { color: #667eea; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <h2>📋 B2B Orders</h2>
+        <div>
+            <a href="/dashboard">Dashboard</a>
+            <a href="/wholesaler/products">My Products</a>
+            <a href="/logout">Logout</a>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+        <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+        
+        <div class="header">
+            <h1>Manage B2B Orders</h1>
+        </div>
+        
+        <div class="orders-table" th:if="${orders != null && !orders.isEmpty()}">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Order #</th>
+                        <th>Customer</th>
+                        <th>Date</th>
+                        <th>Items</th>
+                        <th>Total</th>
+                        <th>Delivery Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="order : ${orders}">
+                        <td th:text="${order.orderNumber}">ORD-001</td>
+                        <td th:text="${order.user.fullName}">Customer Name</td>
+                        <td th:text="${#temporals.format(order.createdAt, 'dd MMM yyyy')}">Date</td>
+                        <td th:text="${order.orderItems != null ? order.orderItems.size() : 0} + ' items'">Items</td>
+                        <td th:text="'₹' + ${order.totalAmount}">Total</td>
+                        <td class="delivery-date">
+                            <span th:if="${order.deliveryDate != null}" 
+                                  th:text="'📅 ' + ${#temporals.format(order.deliveryDate, 'dd MMM yyyy')}">Delivery Date</span>
+                            <span th:if="${order.deliveryDate == null}">Not specified</span>
+                        </td>
+                        <td>
+                            <span class="status" 
+                                  th:classappend="${'status-' + #strings.toLowerCase(order.status)}"
+                                  th:text="${order.status}">Status</span>
+                        </td>
+                        <td>
+                            <div class="actions">
+                                <form th:action="@{/wholesaler/order/update-status}" method="post" style="display: flex; gap: 5px;">
+                                    <input type="hidden" name="orderId" th:value="${order.id}">
+                                    <select name="status">
+                                        <option value="PENDING" th:selected="${order.status == 'PENDING'}">Pending</option>
+                                        <option value="CONFIRMED" th:selected="${order.status == 'CONFIRMED'}">Confirmed</option>
+                                        <option value="PROCESSING" th:selected="${order.status == 'PROCESSING'}">Processing</option>
+                                        <option value="SHIPPED" th:selected="${order.status == 'SHIPPED'}">Shipped</option>
+                                        <option value="DELIVERED" th:selected="${order.status == 'DELIVERED'}">Delivered</option>
+                                        <option value="CANCELLED" th:selected="${order.status == 'CANCELLED'}">Cancelled</option>
+                                    </select>
+                                    <button type="submit" class="btn-update">Update</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <p th:if="${orders == null || orders.isEmpty()}" style="text-align: center; padding: 40px; color: #666;">No orders yet.</p>
+    </div>
+</body>
+</html>

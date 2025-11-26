@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>My Products - Live MART</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f5f5f5; }
+        .navbar { background: #667eea; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+        .navbar h2 { font-size: 24px; }
+        .navbar a { color: white; text-decoration: none; margin-left: 20px; padding: 8px 15px; border-radius: 5px; }
+        .navbar a:hover { background: rgba(255,255,255,0.2); }
+        .container { max-width: 1400px; margin: 30px auto; padding: 0 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .btn { padding: 12px 25px; background: #28a745; color: white; text-decoration: none; border-radius: 5px; display: inline-block; border: none; cursor: pointer; }
+        .btn:hover { background: #218838; }
+        .product-table { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #667eea; color: white; padding: 15px; text-align: left; font-size: 14px; }
+        td { padding: 15px; border-bottom: 1px solid #ddd; font-size: 14px; }
+        tr:hover { background: #f9f9f9; }
+        .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn-edit { padding: 6px 12px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; font-size: 13px; border: none; cursor: pointer; }
+        .btn-edit:hover { background: #0056b3; }
+        .btn-restock { padding: 6px 12px; background: #ffc107; color: #000; border-radius: 5px; font-size: 13px; border: none; cursor: pointer; }
+        .btn-restock:hover { background: #e0a800; }
+        .btn-delete { padding: 6px 12px; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 13px; }
+        .btn-delete:hover { background: #c82333; }
+        .alert { padding: 15px; margin-bottom: 20px; border-radius: 5px; }
+        .alert-success { background: #d4edda; color: #155724; }
+        .alert-error { background: #f8d7da; color: #721c24; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
+        .modal-content { background: white; margin: 10% auto; padding: 30px; width: 400px; border-radius: 10px; }
+        .modal-content h3 { margin-bottom: 20px; }
+        .modal-content input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; }
+        .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <h2>📦 My Products</h2>
+        <div>
+            <a href="/dashboard">Dashboard</a>
+            <a href="/logout">Logout</a>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+        <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+        
+        <div class="header">
+            <h1>Product Inventory</h1>
+            <a href="/retailer/product/add" class="btn">➕ Add New Product</a>
+        </div>
+        
+        <div class="product-table" th:if="${!products.isEmpty()}">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Product Name</th>
+                        <th>Category</th>
+                        <th>Price</th>
+                        <th>Stock</th>
+                        <th>Country</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="product : ${products}">
+                        <td th:text="${product.name}">Product Name</td>
+                        <td th:text="${product.category}">Category</td>
+                        <td th:text="'₹' + ${product.price}">Price</td>
+                        <td th:text="${product.stockQuantity}">Stock</td>
+                        <td th:text="${product.manufacturingCountry}">Country</td>
+                        <td th:text="${product.available ? 'Available' : 'Unavailable'}">Status</td>
+                        <td>
+                            <div class="actions">
+                                <a th:href="@{/retailer/product/edit/{id}(id=${product.id})}" class="btn-edit">Edit</a>
+                                <button class="btn-restock" th:data-product-id="${product.id}" th:data-product-name="${product.name}" onclick="showRestockModal(this)">Restock</button>
+                                <form th:action="@{/retailer/product/delete/{id}(id=${product.id})}" method="post" style="display: inline;">
+                                    <button type="submit" class="btn-delete" onclick="return confirm('Are you sure?')">Delete</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <p th:if="${products.isEmpty()}" style="text-align: center; padding: 40px; color: #666;">No products yet. Add your first product!</p>
+    </div>
+    
+    <!-- Restock Modal -->
+    <div id="restockModal" class="modal">
+        <div class="modal-content">
+            <h3>Restock Product</h3>
+            <p id="productName"></p>
+            <form id="restockForm" method="post">
+                <label>Add Quantity:</label>
+                <input type="number" name="quantity" min="1" required>
+                <div class="modal-actions">
+                    <button type="submit" class="btn">Update Stock</button>
+                    <button type="button" class="btn" style="background: #6c757d;" onclick="closeRestockModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        function showRestockModal(button) {
+            const productId = button.getAttribute('data-product-id');
+            const productName = button.getAttribute('data-product-name');
+            document.getElementById('restockModal').style.display = 'block';
+            document.getElementById('productName').textContent = 'Product: ' + productName;
+            document.getElementById('restockForm').action = '/retailer/product/restock/' + productId;
+        }
+        
+        function closeRestockModal() {
+            document.getElementById('restockModal').style.display = 'none';
+        }
+        
+        window.onclick = function(event) {
+            if (event.target == document.getElementById('restockModal')) {
+                closeRestockModal();
+            }
+        }
+    </script>
+</body>
+</html>

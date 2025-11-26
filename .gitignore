@@ -1,0 +1,38 @@
+# Compiled class files
+*.class
+target/
+*.jar
+*.war
+*.ear
+
+# Log files
+*.log
+logs/
+
+# Database files
+data/
+*.db
+*.mv.db
+*.trace.db
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# Maven
+.mvn/
+mvnw
+mvnw.cmd
+
+# Sensitive configuration files
+application.properties
+application-*.properties
+
+# Environment variables
+.env
+
+# Uploaded files
+uploads/
+static/uploads/

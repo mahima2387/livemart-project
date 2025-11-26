@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${product.name} + ' - Wholesale'">Product - Live MART</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f5f5f5; }
+        .navbar { background: #667eea; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+        .navbar h2 { font-size: 24px; }
+        .navbar a { color: white; text-decoration: none; margin-left: 20px; padding: 8px 15px; border-radius: 5px; }
+        .navbar a:hover { background: rgba(255,255,255,0.2); }
+        .container { max-width: 1000px; margin: 30px auto; padding: 0 20px; }
+        .product-detail { background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+        .product-image { width: 100%; height: 400px; object-fit: cover; border-radius: 10px; }
+        .product-image-placeholder { width: 100%; height: 400px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 80px; border-radius: 10px; }
+        .product-info h1 { color: #667eea; margin-bottom: 15px; }
+        .wholesaler-info { background: #f0f4ff; padding: 15px; border-radius: 5px; margin: 15px 0; }
+        .wholesaler-info h3 { color: #667eea; margin-bottom: 10px; }
+        .price { font-size: 36px; color: #667eea; font-weight: bold; margin: 20px 0; }
+        .stock { color: #28a745; font-weight: bold; margin: 15px 0; font-size: 18px; }
+        .description { color: #666; line-height: 1.6; margin: 20px 0; }
+        .order-form { background: #f9f9f9; padding: 25px; border-radius: 10px; margin-top: 30px; }
+        .order-form h3 { color: #667eea; margin-bottom: 20px; }
+        .form-group { margin: 15px 0; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
+        .form-group input, .form-group textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; }
+        .total-amount { font-size: 24px; font-weight: bold; color: #667eea; margin: 20px 0; padding: 15px; background: white; border-radius: 5px; }
+        .btn { padding: 15px 30px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; width: 100%; font-size: 16px; }
+        .btn:hover { background: #5568d3; }
+        .btn-secondary { background: #6c757d; margin-bottom: 10px; }
+        .btn-secondary:hover { background: #5a6268; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <h2>🏪 Wholesale Product</h2>
+        <div>
+            <a href="/dashboard">Dashboard</a>
+            <a href="/retailer/marketplace">Back to Marketplace</a>
+            <a href="/logout">Logout</a>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div class="product-detail">
+            <div>
+                <img th:if="${product.imageUrl != null and !product.imageUrl.isEmpty()}" 
+                     th:src="${product.imageUrl}" 
+                     th:alt="${product.name}"
+                     class="product-image"
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <div class="product-image-placeholder" style="display: none;">📦</div>
+            </div>
+            
+            <div class="product-info">
+                <h1 th:text="${product.name}">Product Name</h1>
+                
+                <div class="wholesaler-info">
+                    <h3>🏭 Wholesaler Information</h3>
+                    <p><strong>Supplier:</strong> <span th:text="${product.seller.fullName}">Name</span></p>
+                    <p><strong>Email:</strong> <span th:text="${product.seller.email}">Email</span></p>
+                    <p><strong>Phone:</strong> <span th:text="${product.seller.phone}">Phone</span></p>
+                </div>
+                
+                <div class="price" th:text="'₹' + ${product.price} + ' per unit'">₹0.00</div>
+                <div class="stock" th:text="'Available Stock: ' + ${product.stockQuantity} + ' units'">Stock</div>
+                
+                <div class="description">
+                    <h3 style="color: #333; margin-bottom: 10px;">Product Description</h3>
+                    <p th:text="${product.description}">Description</p>
+                </div>
+                
+                <div class="order-form">
+                    <h3>📋 Place Bulk Order</h3>
+                    <form action="/retailer/marketplace/order/place" method="post" onsubmit="return validateOrder()">
+                        <input type="hidden" name="productId" th:value="${product.id}">
+                        
+                        <div class="form-group">
+                            <label>Quantity (units) *</label>
+                            <input type="number" name="quantity" id="quantity" min="1" 
+                                   th:max="${product.stockQuantity}" required 
+                                   oninput="calculateTotal()">
+                        </div>
+                        
+                        <div class="total-amount" id="totalAmount">
+                            Total: ₹0.00
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Special Instructions (Optional)</label>
+                            <textarea name="specialInstructions" rows="3" 
+                                     placeholder="Any special requirements or delivery instructions..."></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn">Place Wholesale Order</button>
+                        <a href="/retailer/marketplace" class="btn btn-secondary" style="display: block; text-align: center; text-decoration: none;">Cancel</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script th:inline="javascript">
+        const pricePerUnit = /*[[${product.price}]]*/ 0;
+        const maxStock = /*[[${product.stockQuantity}]]*/ 0;
+        
+        function calculateTotal() {
+            const quantity = parseInt(document.getElementById('quantity').value) || 0;
+            const total = quantity * pricePerUnit;
+            document.getElementById('totalAmount').textContent = 'Total: ₹' + total.toFixed(2);
+        }
+        
+        function validateOrder() {
+            const quantity = parseInt(document.getElementById('quantity').value);
+            if (quantity <= 0) {
+                alert('Please enter a valid quantity');
+                return false;
+            }
+            if (quantity > maxStock) {
+                alert('Quantity exceeds available stock (' + maxStock + ' units)');
+                return false;
+            }
+            return confirm('Place order for ' + quantity + ' units at ₹' + (quantity * pricePerUnit).toFixed(2) + '?');
+        }
+    </script>
+</body>
+</html>

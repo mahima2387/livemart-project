@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Live MART</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .location-status {
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+        .location-detecting {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .location-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .location-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .spinner-border-sm {
+            width: 1rem;
+            height: 1rem;
+            border-width: 0.15em;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <nav class="navbar navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-shopping-cart"></i> Live MART
+            </a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="row justify-content-center mt-5">
+            <div class="col-md-8">
+                <div class="card shadow">
+                    <div class="card-body p-5">
+                        <h2 class="text-center mb-4">Create Account</h2>
+                        
+                        <!-- Location Status -->
+                        <div id="locationStatus" class="location-status location-detecting" style="display: none;">
+                            <div class="d-flex align-items-center">
+                                <div class="spinner-border spinner-border-sm me-2" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <span id="locationMessage">Detecting your location...</span>
+                            </div>
+                        </div>
+                        
+                        <div th:if="${error}" class="alert alert-danger">
+                            <span th:text="${error}"></span>
+                        </div>
+
+                        <form id="registerForm" th:action="@{/register}" th:object="${user}" method="post">
+                            <!-- Hidden fields for location -->
+                            <input type="hidden" id="latitude" name="latitude">
+                            <input type="hidden" id="longitude" name="longitude">
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Full Name *</label>
+                                    <input type="text" th:field="*{fullName}" class="form-control" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Email *</label>
+                                    <input type="email" th:field="*{email}" class="form-control" required>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Password *</label>
+                                    <input type="password" th:field="*{password}" class="form-control" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Phone Number *</label>
+                                    <input type="tel" th:field="*{phone}" class="form-control" required>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">User Role *</label>
+                                <select th:field="*{role}" class="form-select" required>
+                                    <option value="">Select Role</option>
+                                    <option th:each="role : ${roles}" th:value="${role}" th:text="${role}"></option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Address *</label>
+                                <textarea th:field="*{address}" class="form-control" rows="2" required></textarea>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">City *</label>
+                                    <input type="text" th:field="*{city}" id="cityField" class="form-control" required>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">State *</label>
+                                    <input type="text" th:field="*{state}" id="stateField" class="form-control" required>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Pincode *</label>
+                                    <input type="text" th:field="*{pincode}" class="form-control" required>
+                                </div>
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary btn-lg">Register</button>
+                            </div>
+                        </form>
+
+                        <div class="text-center mt-3">
+                            <p>Already have an account? <a href="/login">Login here</a></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Get user's location on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            getUserLocation();
+        });
+
+        function getUserLocation() {
+            const statusDiv = document.getElementById('locationStatus');
+            const messageSpan = document.getElementById('locationMessage');
+            
+            // Show loading status
+            statusDiv.style.display = 'block';
+            statusDiv.className = 'location-status location-detecting';
+            messageSpan.textContent = '📍 Detecting your location...';
+            
+            if (!navigator.geolocation) {
+                showLocationError('Geolocation is not supported by your browser');
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    
+                    // Store coordinates
+                    document.getElementById('latitude').value = lat;
+                    document.getElementById('longitude').value = lon;
+                    
+                    // Get address from coordinates
+                    reverseGeocode(lat, lon);
+                },
+                function(error) {
+                    let errorMsg = 'Unable to detect location';
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMsg = 'Location permission denied. Please enter manually.';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMsg = 'Location information unavailable.';
+                            break;
+                        case error.TIMEOUT:
+                            errorMsg = 'Location request timed out.';
+                            break;
+                    }
+                    showLocationError(errorMsg);
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                }
+            );
+        }
+
+        function reverseGeocode(lat, lon) {
+            const statusDiv = document.getElementById('locationStatus');
+            const messageSpan = document.getElementById('locationMessage');
+            
+            messageSpan.textContent = '🌍 Getting your address...';
+            
+            // Using Nominatim (OpenStreetMap) - Free and no API key required
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.address) {
+                        const address = data.address;
+                        
+                        // Auto-fill city and state
+                        const city = address.city || address.town || address.village || address.county || '';
+                        const state = address.state || '';
+                        
+                        if (city) {
+                            document.getElementById('cityField').value = city;
+                        }
+                        if (state) {
+                            document.getElementById('stateField').value = state;
+                        }
+                        
+                        // Show success message
+                        statusDiv.className = 'location-status location-success';
+                        messageSpan.innerHTML = `✅ Location detected: ${city}, ${state}<br>
+                                                <small>Coordinates: ${lat.toFixed(6)}, ${lon.toFixed(6)}</small>`;
+                        
+                        // Hide after 5 seconds
+                        setTimeout(() => {
+                            statusDiv.style.display = 'none';
+                        }, 5000);
+                    } else {
+                        showLocationError('Could not determine address from coordinates');
+                    }
+                })
+                .catch(error => {
+                    console.error('Geocoding error:', error);
+                    showLocationError('Failed to get address. Please enter manually.');
+                });
+        }
+
+        function showLocationError(message) {
+            const statusDiv = document.getElementById('locationStatus');
+            const messageSpan = document.getElementById('locationMessage');
+            
+            statusDiv.className = 'location-status location-error';
+            messageSpan.textContent = '⚠️ ' + message;
+            
+            // Hide after 5 seconds
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
