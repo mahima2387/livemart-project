@@ -223,20 +223,11 @@ If emails are not sending:
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-## 📄 License
-
-This project is open source and available under the MIT License.
-
 ## 👨‍💻 Author
 
 **Mahima**
 - GitHub: [@mahima2387](https://github.com/mahima2387)
 
-## 📞 Support
-
-For issues, questions, or suggestions:
-- Open an issue on GitHub
-- Contact: mahima2387@github.com
 
 ## 🙏 Acknowledgments
 
