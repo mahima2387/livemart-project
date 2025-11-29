@@ -219,28 +219,9 @@ If emails are not sending:
 - `GET /admin/users` - Manage users
 - `GET /admin/dashboard` - Admin dashboard
 
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
 ## 👨‍💻 Author
 
 **Mahima**
 - GitHub: [@mahima2387](https://github.com/mahima2387)
 
 
-## 🙏 Acknowledgments
-
-- Spring Boot community
-- Thymeleaf template engine
-- H2 Database
-- All contributors and users
-
----
-
-**⚠️ Note**: This is a demo project. For production use, please:
-- Use a production-grade database (MySQL, PostgreSQL)
-- Implement proper payment gateway integration
-- Add comprehensive security measures
-- Set up proper logging and monitoring
-- Use environment variables for sensitive data
